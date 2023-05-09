@@ -52,6 +52,7 @@ limitations under the License.
       </exclusions>
     </dependency>
 
+
     <dependency>
       <groupId>org.apache.beam</groupId>
       <artifactId>beam-sdks-java-io-hbase</artifactId>
@@ -187,6 +188,27 @@ limitations under the License.
       <artifactId>junit</artifactId>
       <version>${junit.version}</version>
       <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.beam</groupId>
+      <artifactId>beam-runners-google-cloud-dataflow-java</artifactId>
+      <version>${beam.version}</version>
+      <scope>test</scope>
+      <exclusions>
+      <!-- Let the beam pipeline choose the appropriate slf4j impl.
+            Since this is the beam universe, we don't have be a drop in replacement
+            for hbase-shaded-client, so we can exclude parts of it that are
+            inappropriate for beam-->
+      <exclusion>
+        <groupId>com.google.api.grpc</groupId>
+        <artifactId>grpc-google-cloud-bigtable-v2</artifactId>
+      </exclusion>
+        <exclusion>
+          <groupId>com.google.api.grpc</groupId>
+          <artifactId>grpc-google-cloud-bigtable-admin-v2</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
   </dependencies>
 

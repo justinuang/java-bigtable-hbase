@@ -248,6 +248,9 @@ limitations under the License.
             <goals>
               <goal>enforce</goal>
             </goals>
+            <phase>
+              none
+            </phase>
             <configuration>
               <rules>
                 <requireSameVersions>

@@ -171,7 +171,9 @@ public class CloudBigtableIO {
       List<SourceWithKeys> splits = new ArrayList<>();
       byte[] startKey = HConstants.EMPTY_START_ROW;
       long lastOffset = 0;
-      for (KeyOffset response : getSampleRowKeys()) {
+      List<KeyOffset> row_keys = getSampleRowKeys();
+      SOURCE_LOG.info("Sampled row keys ({}): {}", row_keys.size(), row_keys);
+      for (KeyOffset response : row_keys) {
         byte[] endKey = response.getKey().toByteArray();
         // Avoid empty regions.
         if (Bytes.equals(startKey, endKey) && startKey.length > 0) {
@@ -197,7 +199,10 @@ public class CloudBigtableIO {
           } else {
             splitStop = scanEndKey;
           }
-          splits.addAll(split(offset - lastOffset, desiredBundleSizeBytes, splitStart, splitStop));
+          SOURCE_LOG.info("Offset {}, Last offset {}, regionSize {}, splitStart {}, splitStop {}, desiredBundleSize {}", offset, lastOffset, offset - lastOffset, splitStart, splitStop, desiredBundleSizeBytes);
+          List<SourceWithKeys> tmp = split(offset - lastOffset, desiredBundleSizeBytes, splitStart, splitStop);
+          SOURCE_LOG.info("splits: {}", tmp);
+          splits.addAll(tmp);
         }
         lastOffset = offset;
         startKey = endKey;
@@ -207,7 +212,12 @@ public class CloudBigtableIO {
       if (!Bytes.equals(startKey, endKey) && scanEndKey.length == 0) {
         splits.add(createSourceWithKeys(startKey, endKey, 0));
       }
+
+      SOURCE_LOG.info("prereduce size: {}", splits.size());
+
       List<SourceWithKeys> result = reduceSplits(splits);
+
+      SOURCE_LOG.info("after reduce size: {}", result.size());
 
       // Randomize the list, since the default behavior would lead to multiple workers hitting the
       // same tablet.
@@ -349,6 +359,7 @@ public class CloudBigtableIO {
         throws IOException {
       Preconditions.checkState(desiredBundleSizeBytes >= 0);
       int splitCount = (int) Math.ceil((double) (regionSize) / (double) (desiredBundleSizeBytes));
+      SOURCE_LOG.info("Split count: {}", splitCount);
 
       if (splitCount < 2 || stopKey.length == 0 || Bytes.compareTo(startKey, stopKey) >= 0) {
         return Collections.singletonList(createSourceWithKeys(startKey, stopKey, regionSize));
@@ -368,6 +379,7 @@ public class CloudBigtableIO {
           for (int i = 0; i < splitCount; i++) {
             result.add(createSourceWithKeys(splitKeys[i], splitKeys[i + 1], regionSize));
           }
+          SOURCE_LOG.info("split size: {}", result.size());
           return result;
         } catch (Exception e) {
           SOURCE_LOG.warn(
@@ -521,6 +533,7 @@ public class CloudBigtableIO {
       // the row key sizes are large, or the scan is large.
       //
       // TODO: Work on a more robust algorithm for splitting that works for more cases.
+      SOURCE_LOG.info("Desired bundle size: {}", desiredBundleSizeBytes);
       List<? extends BoundedSource<Result>> splits = getSplits(desiredBundleSizeBytes);
       SOURCE_LOG.info("Creating {} splits.", splits.size());
       SOURCE_LOG.debug("Created splits {}.", splits);
