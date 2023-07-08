@@ -33,6 +33,7 @@ import com.google.cloud.bigtable.data.v2.models.ReadModifyWriteRow;
 import com.google.cloud.bigtable.data.v2.models.Row;
 import com.google.cloud.bigtable.data.v2.models.RowMutation;
 import com.google.cloud.bigtable.hbase.adapters.Adapters;
+import com.google.cloud.bigtable.hbase.util.Logger;
 import com.google.cloud.bigtable.hbase.wrappers.BulkMutationWrapper;
 import com.google.cloud.bigtable.hbase.wrappers.BulkReadWrapper;
 import com.google.cloud.bigtable.hbase.wrappers.DataClientWrapper;
@@ -51,6 +52,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
+import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.hadoop.hbase.client.AbstractClientScanner;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
@@ -225,18 +227,24 @@ public class DataClientVeneerApi implements DataClientWrapper {
   /** wraps {@link ServerStream} onto HBase {@link ResultScanner}. */
   private static class RowResultScanner extends AbstractClientScanner {
 
+    org.apache.beam.sdk.metrics.Counter counter = Metrics.counter("dataflow-throttling-metrics", "throttling-msecs");
+
     private final Meter scannerResultMeter =
         BigtableClientMetrics.meter(BigtableClientMetrics.MetricLevel.Info, "scanner.results");
     private final Timer scannerResultTimer =
         BigtableClientMetrics.timer(
             BigtableClientMetrics.MetricLevel.Debug, "scanner.results.latency");
 
+    protected static final Logger LOG = new Logger(BigtableVeneerApi.class);
+
     private final ServerStream<Result> serverStream;
     private final Iterator<Result> iterator;
+    private final long startTime;
 
     RowResultScanner(ServerStream<Result> serverStream) {
       this.serverStream = serverStream;
       this.iterator = serverStream.iterator();
+      this.startTime = System.currentTimeMillis();
     }
 
     @Override
@@ -254,6 +262,9 @@ public class DataClientVeneerApi implements DataClientWrapper {
 
     @Override
     public void close() {
+      long delay = (System.currentTimeMillis() - this.startTime) / 2;
+      LOG.info("Closing with delay: %s", delay);
+      // counter.inc(delay);
       serverStream.cancel();
     }
 

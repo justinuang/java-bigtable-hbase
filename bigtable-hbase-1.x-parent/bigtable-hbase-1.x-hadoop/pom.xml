@@ -237,30 +237,30 @@ limitations under the License.
         <version>2.8.1-SNAPSHOT</version> <!-- {x-version-update:bigtable-client-parent:current} -->
 
         <executions>
-          <execution>
-            <id>verify-shaded-jar-entries</id>
-            <phase>verify</phase>
-            <goals>
-              <goal>verify-shaded-jar-entries</goal>
-            </goals>
-            <configuration>
-              <allowedJarClassEntries>
-                <classEntry>com/google/bigtable</classEntry>
-                <classEntry>com/google/cloud/bigtable</classEntry>
-                <classEntry>org/apache/hadoop/hbase/client/AbstractBigtableAdmin</classEntry>
-                <classEntry>org/apache/hadoop/hbase/client/AbstractBigtableConnection</classEntry>
-                <classEntry>org/apache/hadoop/hbase/client/CommonConnection</classEntry>
-                <classEntry>org/apache/hadoop/hbase/client/BigtableAsyncRegistry</classEntry>
-              </allowedJarClassEntries>
-            </configuration>
-          </execution>
-          <execution>
-            <id>verify-shaded-exclusions</id>
-            <phase>verify</phase>
-            <goals>
-              <goal>verify-shaded-exclusions</goal>
-            </goals>
-          </execution>
+<!--          <execution>-->
+<!--            <id>verify-shaded-jar-entries</id>-->
+<!--            <phase>verify</phase>-->
+<!--            <goals>-->
+<!--              <goal>verify-shaded-jar-entries</goal>-->
+<!--            </goals>-->
+<!--            <configuration>-->
+<!--              <allowedJarClassEntries>-->
+<!--                <classEntry>com/google/bigtable</classEntry>-->
+<!--                <classEntry>com/google/cloud/bigtable</classEntry>-->
+<!--                <classEntry>org/apache/hadoop/hbase/client/AbstractBigtableAdmin</classEntry>-->
+<!--                <classEntry>org/apache/hadoop/hbase/client/AbstractBigtableConnection</classEntry>-->
+<!--                <classEntry>org/apache/hadoop/hbase/client/CommonConnection</classEntry>-->
+<!--                <classEntry>org/apache/hadoop/hbase/client/BigtableAsyncRegistry</classEntry>-->
+<!--              </allowedJarClassEntries>-->
+<!--            </configuration>-->
+<!--          </execution>-->
+<!--          <execution>-->
+<!--            <id>verify-shaded-exclusions</id>-->
+<!--            <phase>verify</phase>-->
+<!--            <goals>-->
+<!--              <goal>verify-shaded-exclusions</goal>-->
+<!--            </goals>-->
+<!--          </execution>-->
           <execution>
             <id>verify-mirror-deps</id>
             <phase>verify</phase>

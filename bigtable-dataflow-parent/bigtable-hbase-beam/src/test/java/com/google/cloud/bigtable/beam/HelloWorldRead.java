@@ -39,12 +39,12 @@ public class HelloWorldRead {
   public static void main(String[] args) {
     BigtableOptions options =
         PipelineOptionsFactory.fromArgs(args).withValidation().as(BigtableOptions.class);
-    options.setMaxNumWorkers(3);
+    options.setMaxNumWorkers(20);
+    options.setRegion("asia-east1");
     Pipeline p = Pipeline.create(options);
 
     Scan scan = new Scan();
     scan.setCacheBlocks(false);
-    scan.setFilter(new FirstKeyOnlyFilter());
 
     CloudBigtableScanConfiguration config =
         new CloudBigtableScanConfiguration.Builder()
@@ -57,8 +57,6 @@ public class HelloWorldRead {
                 "test-bigtable.sandbox.googleapis.com")
             .withConfiguration(BigtableOptionsFactory.BIGTABLE_USE_BATCH, "false")
             .build();
-
-
 
     // [START bigtable_beam_helloworld_read_transforms]
     p.apply(Read.from(CloudBigtableIO.read(config)))

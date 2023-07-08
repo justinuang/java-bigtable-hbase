@@ -48,6 +48,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
@@ -114,6 +115,8 @@ public abstract class AbstractBigtableTable implements Table {
   protected final DataClientWrapper clientWrapper;
   protected final AbstractBigtableConnection bigtableConnection;
   private TableMetrics metrics = new TableMetrics();
+
+  org.apache.beam.sdk.metrics.Counter counter = Metrics.counter("dataflow-throttling-metrics", "throttling-msecs");
 
   /**
    * Constructed by BigtableConnection
@@ -297,6 +300,8 @@ public abstract class AbstractBigtableTable implements Table {
   public ResultScanner getScanner(final Scan scan) throws IOException {
     LOG.trace("getScanner(Scan)");
     Span span = TRACER.spanBuilder("BigtableTable.scan").startSpan();
+    // counter.inc(1000000);
+    // LOG.info("Incrementing metric");
     try (Scope scope = TRACER.withSpan(span)) {
 
       final ResultScanner scanner = clientWrapper.readRows(hbaseAdapter.adapt(scan));
