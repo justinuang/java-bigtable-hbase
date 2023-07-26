@@ -48,6 +48,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
@@ -303,6 +304,10 @@ public abstract class AbstractBigtableTable implements Table {
     // counter.inc(1000000);
     // LOG.info("Incrementing metric");
     try (Scope scope = TRACER.withSpan(span)) {
+      // int sleep_ms =ThreadLocalRandom.current().nextInt(0, 10000);
+      // LOG.info("Sleeping for %s ms", sleep_ms);
+      // Thread.sleep(sleep_ms);
+      // counter.inc(sleep_ms);
 
       final ResultScanner scanner = clientWrapper.readRows(hbaseAdapter.adapt(scan));
       if (hasWhileMatchFilter(scan.getFilter())) {

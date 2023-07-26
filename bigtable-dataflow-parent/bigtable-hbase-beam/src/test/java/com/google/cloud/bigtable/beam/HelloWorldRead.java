@@ -19,6 +19,7 @@ package com.google.cloud.bigtable.beam;
 
 import com.google.cloud.bigtable.hbase.BigtableOptionsFactory;
 import org.apache.beam.runners.dataflow.options.DataflowPipelineOptions;
+import org.apache.beam.runners.dataflow.options.DataflowPipelineWorkerPoolOptions.AutoscalingAlgorithmType;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.Read;
 import org.apache.beam.sdk.options.Default;
@@ -39,7 +40,10 @@ public class HelloWorldRead {
   public static void main(String[] args) {
     BigtableOptions options =
         PipelineOptionsFactory.fromArgs(args).withValidation().as(BigtableOptions.class);
-    options.setMaxNumWorkers(20);
+    // options.setMaxNumWorkers(40);
+    options.setNumWorkers(5);
+    options.setAutoscalingAlgorithm(AutoscalingAlgorithmType.NONE);
+    options.setNumberOfWorkerHarnessThreads(1);
     options.setRegion("asia-east1");
     Pipeline p = Pipeline.create(options);
 

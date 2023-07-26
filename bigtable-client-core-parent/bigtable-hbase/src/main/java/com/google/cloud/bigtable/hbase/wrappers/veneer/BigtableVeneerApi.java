@@ -17,6 +17,7 @@ package com.google.cloud.bigtable.hbase.wrappers.veneer;
 
 import com.google.api.core.InternalApi;
 import com.google.api.gax.grpc.InstantiatingGrpcChannelProvider;
+import com.google.api.gax.rpc.StatusCode.Code;
 import com.google.api.gax.tracing.ApiTracer;
 import com.google.api.gax.tracing.ApiTracerFactory;
 import com.google.api.gax.tracing.BaseApiTracer;
@@ -58,7 +59,8 @@ public class BigtableVeneerApi extends BigtableApi {
   private final AdminClientWrapper adminClientWrapper;
   private final int channelPoolSize;
 
-  org.apache.beam.sdk.metrics.Counter counter = Metrics.counter("dataflow-throttling-metrics", "throttling-msecs");
+  org.apache.beam.sdk.metrics.Counter counter = Metrics.counter("dataflow-throttling-metrics",
+      "throttling-msecs");
 
   public BigtableVeneerApi(BigtableHBaseVeneerSettings settings) throws IOException {
     super(settings);
@@ -73,101 +75,21 @@ public class BigtableVeneerApi extends BigtableApi {
       @Override
       public ApiTracer newTracer(ApiTracer apiTracer, SpanName spanName,
           OperationType operationType) {
-        return new BaseApiTracer() {
-          long attemptStartMillis = 0;
-
-          @Override
-          public void operationSucceeded() {
-          }
-
-          @Override
-          public void operationCancelled() {
-
-          }
-
-          @Override
-          public void operationFailed(Throwable throwable) {
-
-          }
-
-          @Override
-          public void connectionSelected(String s) {
-
-          }
-
-          @Override
-          public void attemptStarted(int i) {
-            attemptStartMillis = System.currentTimeMillis();
-            LOG.info("Attempt start %s", attemptStartMillis);
-          }
-
-          @Override
-          public void attemptStarted(Object o, int i) {
-            attemptStartMillis = System.currentTimeMillis();
-            LOG.info("Attempt start i %s", attemptStartMillis);
-          }
-
-          @Override
-          public void attemptSucceeded() {
-            long duration_millis = System.currentTimeMillis() - attemptStartMillis;
-            LOG.info("Attempt succeeded %s", duration_millis);
-          }
-
-          @Override
-          public void attemptCancelled() {
-
-          }
-
-          @Override
-          public void attemptFailed(Throwable throwable, Duration duration) {
-            long duration_millis = System.currentTimeMillis() - attemptStartMillis;
-            LOG.info("Attempt failed with latency %s, with delay duration: %s", duration_millis, duration.toMillis());
-            // counter.inc(duration.toMillis());
-            // counter.inc(duration_millis);
-          }
-
-          @Override
-          public void attemptFailedRetriesExhausted(Throwable throwable) {
-
-          }
-
-          @Override
-          public void attemptPermanentFailure(Throwable throwable) {
-
-          }
-
-          @Override
-          public void lroStartFailed(Throwable throwable) {
-
-          }
-
-          @Override
-          public void lroStartSucceeded() {
-
-          }
-
-          @Override
-          public void responseReceived() {
-
-          }
-
-          @Override
-          public void requestSent() {
-
-          }
-
-          @Override
-          public void batchRequestSent(long l, long l1) {
-
-          }
-        };
+        return new ThrottlingApiTracer();
       }
     };
 
     BigtableDataSettings.Builder builder = settings.getDataSettings().toBuilder();
     builder.stubSettings().setTracerFactory(tracerFactory);
-    builder.stubSettings().readRowsSettings().retrySettings().setInitialRetryDelay(Duration.ofSeconds(1)).setRetryDelayMultiplier(1).setMaxAttempts(1000000).setMaxRetryDelay(Duration.ofMinutes(10));
-    builder.stubSettings().bulkReadRowsSettings().retrySettings().setInitialRetryDelay(Duration.ofSeconds(1)).setRetryDelayMultiplier(1).setMaxAttempts(1000000).setMaxRetryDelay(Duration.ofMinutes(10));
+    builder.stubSettings().readRowSettings().setRetryableCodes(Code.UNAVAILABLE, Code.RESOURCE_EXHAUSTED);
+    builder.stubSettings().readRowsSettings().setRetryableCodes(Code.UNAVAILABLE, Code.RESOURCE_EXHAUSTED);
+    builder.stubSettings().readRowsSettings().retrySettings()
+        .setInitialRetryDelay(Duration.ofSeconds(1)).setRetryDelayMultiplier(1)
+        .setMaxAttempts(1000000).setMaxRetryDelay(Duration.ofMinutes(10));
+    builder.stubSettings().bulkReadRowsSettings().setRetryableCodes(Code.UNAVAILABLE, Code.RESOURCE_EXHAUSTED);
+    builder.stubSettings().bulkReadRowsSettings().retrySettings()
+        .setInitialRetryDelay(Duration.ofSeconds(1)).setRetryDelayMultiplier(1)
+        .setMaxAttempts(1000000).setMaxRetryDelay(Duration.ofMinutes(10));
     dataClientWrapper =
         new DataClientVeneerApi(
             BigtableDataClient.create(builder.build()), settings.getClientTimeouts());
@@ -212,4 +134,5 @@ public class BigtableVeneerApi extends BigtableApi {
     }
     return 0;
   }
+
 }

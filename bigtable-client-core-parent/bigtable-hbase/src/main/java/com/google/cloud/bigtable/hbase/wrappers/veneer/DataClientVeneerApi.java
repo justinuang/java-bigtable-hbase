@@ -240,16 +240,33 @@ public class DataClientVeneerApi implements DataClientWrapper {
     private final ServerStream<Result> serverStream;
     private final Iterator<Result> iterator;
     private final long startTime;
+    private boolean isFirst;
 
     RowResultScanner(ServerStream<Result> serverStream) {
       this.serverStream = serverStream;
       this.iterator = serverStream.iterator();
       this.startTime = System.currentTimeMillis();
+      this.isFirst = true;
     }
 
     @Override
     public Result next() {
       try (Context ignored = scannerResultTimer.time()) {
+        long start_time = System.currentTimeMillis();
+        while (isFirst && !serverStream.isReceiveReady()) {
+          long throttled_ms = ThrottlingApiTracer.throttling_ms.getAndSet(0);
+          if (throttled_ms > 0) {
+            LOG.info("Incrementing throttled ms: %s", throttled_ms);
+            counter.inc(throttled_ms);
+          }
+
+          Thread.sleep(100);
+        }
+        if (isFirst) {
+          LOG.info("Waited %s ms to start", System.currentTimeMillis() - start_time);
+        }
+
+        isFirst = false;
         if (!iterator.hasNext()) {
           // null signals EOF
           return null;
@@ -257,13 +274,15 @@ public class DataClientVeneerApi implements DataClientWrapper {
 
         scannerResultMeter.mark();
         return iterator.next();
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
       }
     }
 
     @Override
     public void close() {
-      long delay = (System.currentTimeMillis() - this.startTime) / 2;
-      LOG.info("Closing with delay: %s", delay);
+      // long delay = (System.currentTimeMillis() - this.startTime) / 2;
+      // LOG.info("Closing with delay: %s", delay);
       // counter.inc(delay);
       serverStream.cancel();
     }
